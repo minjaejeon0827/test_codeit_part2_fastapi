@@ -14,7 +14,7 @@ def sanitize_image_bytes(contents: bytes) -> bytes:
         # (만약 여기서 이미지 파일이 아니라 그냥 악성 스크립트면 바로 에러 발생)
         img = Image.open(io.BytesIO(contents))
             
-        # 파일의 진짜 포맷이 우리가 허락한 것(JPEG, PNG 등)인지 확인.
+        # 파일의 진짜 포맷이 우리가 허락한 것(JPEG, PNG, WEBP 등)인지 확인.
         if img.format not in ALLOWED_IMAGE_FORMATS:
             raise HTTPException(status_code=400, detail=f"위험 감지! 허용되지 않은 포맷({img.format}).")
 
