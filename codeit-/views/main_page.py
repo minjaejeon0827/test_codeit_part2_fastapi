@@ -1,6 +1,9 @@
 """
 streamlit 메인 웹페이지.
 
+* streamlit 라이브러리 사용법 위키독스
+참고: https://wikidocs.net/231560
+
 * streamlit 메인 웹페이지 -> 서브 웹페이지 이동
 참고: https://leemcse.tistory.com/entry/%ED%8E%98%EC%9D%B4%EC%A7%80-%EC%9D%B4%EB%8F%99-main%EA%B3%BC-sub-%ED%8E%98%EC%9D%B4%EC%A7%80-%EC%9D%B4%EB%8F%99
 
