@@ -3,8 +3,12 @@ streamlit 메인 웹페이지.
 
 * streamlit 메인 웹페이지 -> 서브 웹페이지 이동
 참고: https://leemcse.tistory.com/entry/%ED%8E%98%EC%9D%B4%EC%A7%80-%EC%9D%B4%EB%8F%99-main%EA%B3%BC-sub-%ED%8E%98%EC%9D%B4%EC%A7%80-%EC%9D%B4%EB%8F%99
+
+* Gemini AI 도구 활용
+참고: https://gemini.google.com/app/b27729891de22455?hl=ko
 """
 
+import json
 import streamlit as st
 import requests
 from pathlib import Path
@@ -15,8 +19,19 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CSS_FILE_NAME = PROJECT_ROOT / "public" / "css" / "main.css"
 FOOTER_BANNER_FILE_NAME = PROJECT_ROOT / "public" / "images" / "footer_banner.png"
 RIGHT_BANNER_FILE_NAME = PROJECT_ROOT / "public" / "images" / "right_banner.png"
+JSON_FILE_NAME = PROJECT_ROOT / "detect_tests" / "pill_safety_info.json"  # 약 정보 JSON 파일 경로
 LOCALHOST = "http://127.0.0.1:8000/"
 DETECT_URL = f"{LOCALHOST}detect"
+
+@st.cache_data
+def load_pill_safety_info(file_path: str) -> dict:
+    """약 정보 JSON 파일을 읽어옵니다. (캐싱 적용)"""
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        st.error(f"[오류] 약 정보 파일 존재 안 함!: {file_path}")
+        return {}
 
 def load_css(file_name: str) -> None:
     """main.css 파일 로드 및 Streamlit 적용"""
@@ -43,7 +58,7 @@ def display_server_connection():
     except requests.exceptions.RequestException:
         st.sidebar.error("🔴 서버 꺼져있음")  # ConnectionError뿐만 아니라 Timeout 등 모든 요청 관련 오류 포괄하여 처리
     
-def post_detect_async(uploaded_file: UploadFile, msg_container) -> None:
+def post_detect(uploaded_file: UploadFile, msg_container) -> None:
     # 1. 서버로 보낼 '파일 상자' 만들기
     # (파일 이름, 파일의 실제 데이터, 파일 종류) 순서로 포장.
     files = {"file": (uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type)}
@@ -57,9 +72,9 @@ def post_detect_async(uploaded_file: UploadFile, msg_container) -> None:
         # raise Exception("[테스트] 서버 통신 오류")  # 예외 발생시킴
         # raise requests.exceptions.RequestException("[테스트] 서버 통신 오류")  # 예외 발생시킴
 
-        # 3. 서버가 무사히 답장을 줬는지(200 OK) 확인하기
+        # 3. 서버 응답 상태 코드 확인(200 OK)
         if response.status_code == 200:
-            # 서버가 준 JSON 답장을 파이썬 딕셔너리 변환.
+            # 서버가 준 JSON 데이터 파이썬 딕셔너리 변환.
             result = response.json()
             # 전달받은 넓은 공간(msg_container)에 메시지 출력
             msg_container.success(f"{result['message']}")
@@ -78,9 +93,11 @@ def post_detect_async(uploaded_file: UploadFile, msg_container) -> None:
             # ==========================================
             st.session_state['detect_result'] = "success"
             st.session_state['predicted_image_path'] = result['predicted_image_path']
+            st.session_state['detected_pills'] = result['detected_pills']
         else:
             # 탐지 실패 (서버 오류 응답): Session State 업데이트
             st.session_state['detect_result'] = "failure"
+            st.session_state['detected_pills'] = []
             
             # ==========================================
             # 오류 발생 시 서버가 보낸 진짜 이유(detail) 꺼내 읽기!
@@ -102,6 +119,7 @@ def post_detect_async(uploaded_file: UploadFile, msg_container) -> None:
     except requests.exceptions.RequestException as e:
         # 통신 실패: Session State 업데이트
         st.session_state['detect_result'] = "failure"
+        st.session_state['detected_pills'] = []
         # 서버가 꺼져있거나 통신이 끊겼을 때 프로그램이 죽지 않게 막아주기.
         msg_container.error(f"🔴 서버 통신 불가. (오류: {e})")
     
@@ -141,6 +159,9 @@ def main_page():
         
         if 'last_uploaded_file' not in st.session_state:
             st.session_state['last_uploaded_file'] = None
+            
+        if 'detected_pills' not in st.session_state:
+            st.session_state['detected_pills'] = []
         
         # 2. 커스텀 CSS (프로토타입 디자인 적용)
         load_css(str(CSS_FILE_NAME))
@@ -148,7 +169,7 @@ def main_page():
         # 3. 사이드바 (메뉴 및 서버 연결 상태 확인)
         st.sidebar.title("Menu")
         # menu = st.sidebar.radio("이동", ["🏠 홈", "📜 탐지 기록", "⚙️ 설정"])
-        menu = st.sidebar.radio("이동", ["🏠 홈", "⚙️ 설정"])
+        menu = st.sidebar.radio("이동", "🏠 홈")
         st.sidebar.markdown("---")
 
         display_server_connection()  # FastAPI 서버 통신 확인 로직 함수 호출
@@ -197,7 +218,8 @@ def main_page():
                         st.session_state['last_uploaded_file'] = uploaded_file.name
                         st.session_state['detect_result'] = None
                         st.session_state['predicted_image_path'] = None
-                    
+                        st.session_state['detected_pills'] = []
+                        
                     # ==========================================
                     # 이미지 파일 업로드 시 업로더 전체 화면 여백 까지 완전히 삭제!
                     # ==========================================
@@ -225,7 +247,7 @@ def main_page():
                     #     if st.button("탐지", width="stretch"):
                     #         # st.session_state['show_detect_msg'] = True
                     #         with st.spinner("AI가 알약을 꼼꼼히 분석하고 있어요... 🔍"):
-                    #             post_detect_async(uploaded_file, msg_container)
+                    #             post_detect(uploaded_file, msg_container)
                     
                     # with btn_col2:
                     #     if st.button("닫기", width="stretch"):
@@ -246,6 +268,7 @@ def main_page():
                         st.session_state['detect_result'] = None
                         st.session_state['predicted_image_path'] = None
                         st.session_state['last_uploaded_file'] = None
+                        st.session_state['detected_pills'] = []
 
                     # 버튼들을 담을 '빈 상자(placeholder)' 생성
                     btn_container = st.empty()
@@ -267,7 +290,7 @@ def main_page():
                     # 탐지 버튼 클릭 시 실행 로직
                     if detect_clicked:
                         with st.spinner("AI가 알약을 꼼꼼히 분석하고 있어요... 🔍"):
-                            post_detect_async(uploaded_file, msg_container)
+                            post_detect(uploaded_file, msg_container)
                         
                         # 탐지가 실패로 끝나면 즉시 '빈 상자'를 비우고 닫기 버튼 1개만 다시 그리기!
                         if st.session_state['detect_result'] == 'failure':
@@ -298,11 +321,31 @@ def main_page():
             with st.container(border=True):
                 st.markdown("### 📋 주의사항")
                 st.caption("Medication Info")
-                st.write("탐지한 알약 주의사항 설명.")
                 
-                # if st.button("🔍 약 정보 확인"):
-                #     st.info("내 약 정보를 불러옵니다... (API 연동 필요)")
+                pill_safety_info_data = load_pill_safety_info(str(JSON_FILE_NAME))
+                
+                if st.session_state['detect_result'] == 'success' and st.session_state['detected_pills']:
+                    st.write("알약 복용 시 주의사항 안내.")
                     
+                    for pill in st.session_state['detected_pills']:
+                        pill_name = pill['name']
+                        info = pill_safety_info_data.get(pill_name)
+                        
+                        with st.expander(f"💊 {pill_name}", expanded=True):
+                            if info:
+                                st.markdown(f"**🔹 복용방법:** {info.get('복용방법', '정보 없음')}")
+                                st.markdown(f"**🔹 주의사항:** {info.get('주의사항', '정보 없음')}")
+                                st.markdown(f"**🔹 주요부작용:** {info.get('주요부작용', '정보 없음')}")
+                                st.markdown(f"**🔹 금기:** {info.get('금기', '정보 없음')}")
+                                st.markdown(f"**🔹 보관:** {info.get('보관', '정보 없음')}")
+                                st.markdown(f"**🔹 상호작용:** {info.get('상호작용', '정보 없음')}")
+                            else:
+                                st.write("해당 약에 대한 주의사항 정보 존재 안 함!")
+                else:
+                    st.write("탐지한 알약 주의사항 설명.")
+                    # st.write("복용 중인 약의 정보 및 스케줄 관리.")
+                    # st.info("알약 사진을 업로드하고 '탐지' 버튼을 눌러주세요.")
+
         # with col3:  # (오른쪽 배너 공간)
         #     # 오른쪽 배너 이미지를 넣습니다.
         #     # width="stretch" 옵션을 넣으면 상단 레이아웃 너비에 맞춰 100% 꽉 차게 확장됩니다.

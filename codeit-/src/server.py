@@ -1,18 +1,21 @@
-# 파이썬 패키지 설치 명령어
-# pip instal streamlit==1.52.2
-# pip install fastapi==0.104.1
-# pip install uvicorn==0.27.0.post1
+"""
+* 파이썬 패키지 설치 명령어
+pip instal streamlit==1.52.2
+pip install fastapi==0.104.1
+pip install uvicorn==0.27.0.post1
 
-# fastapi 웹서버 터미널 실행 명령어
-# uvicorn src.server:app --reload
+* fastapi 웹서버 터미널 실행 명령어
+uvicorn src.server:app --reload
 
-# server.py
+* Gemini AI 도구 활용
+참고: https://gemini.google.com/app/b27729891de22455?hl=ko
+"""
+
 import io
 import os
 import tempfile
 from pathlib import Path
 from fastapi import FastAPI, UploadFile, File, HTTPException
-from PIL import Image, UnidentifiedImageError
 from detect_tests.security import sanitize_image_bytes
 from detect_tests.model import predict
 
