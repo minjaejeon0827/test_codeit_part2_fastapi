@@ -1,6 +1,6 @@
 /* public/main.css */
 
-/* 1. Streamlit 기본 상하 여백을 확 줄여서 스크롤바 방지 및 화면 끌어올리기 */
+/* Streamlit 기본 상하 여백을 확 줄여서 스크롤바 방지 및 화면 끌어올리기 */
 .block-container {
     padding-top: 10rem !important;
     padding-bottom: 5rem !important;
@@ -16,7 +16,7 @@
 }
 
 /* =========================================
-   1. 하단 배너 가운데 정렬 (원본 크기 유지)
+   하단 배너 가운데 정렬 (원본 크기 유지)
    ========================================= */
 /* 투명 상자를 가로로 넓게 폅니다 */
 [data-testid="stImage"],
@@ -69,10 +69,10 @@ div[data-testid="stVerticalBlock"] > div:has(div.stHeader) {
 }
 
 /* =========================================
-   2. 파일 업로더(Drag & Drop) 영역 완벽 정렬
+   파일 업로더(Drag & Drop) 영역 완벽 정렬
    ========================================= */
 
-/* 1. 업로드 박스 전체 틀 (높이를 아예 고정시켜 줍니다) */
+/* 업로드 박스 전체 틀 (높이를 아예 고정시켜 줍니다) */
 [data-testid="stFileUploaderDropzone"] {
     background-color: #f1f3f5 !important;
     border-radius: 10px !important;
@@ -83,15 +83,17 @@ div[data-testid="stVerticalBlock"] > div:has(div.stHeader) {
     overflow: hidden !important; /* 혹시 모를 삐져나감 완벽 차단 */
 }
 
-/* 2. 방해되는 기본 아이콘(구름)과 텍스트 완전 삭제 */
+/* 방해되는 기본 아이콘(구름)과 텍스트 완전 삭제 */
 [data-testid="stFileUploaderDropzone"] svg,
-[data-testid="stFileUploaderDropzone"] small {
-    display: none !important;
+[data-testid="stFileUploaderDropzone"] small,
+[data-testid="stFileUploaderDropzone"] > div > div span {
+    display: none !important;  /* 내부에 숨은 영어 텍스트 span 태그 완전히 숨김 */
 }
 
-/* 3. 텍스트 감싸는 투명 상자 강제 중앙 정렬 */
+/* 텍스트 감싸는 투명 상자 강제 중앙 정렬 */
 [data-testid="stFileUploaderDropzone"] > div > div {
     color: transparent !important;
+    font-size: 0 !important; /* 영어 텍스트의 크기 0으로 만들어 완전히 지워버리기 */
     position: absolute !important; 
     top: 50px !important; /* 위에서 50px 위치에 고정 */
     left: 0 !important;
@@ -102,7 +104,7 @@ div[data-testid="stVerticalBlock"] > div:has(div.stHeader) {
     justify-content: center !important;
 }
 
-/* 4. 한글 텍스트 덮어쓰기 (가운데 정렬) */
+/* 한글 텍스트 덮어쓰기 (가운데 정렬) */
 [data-testid="stFileUploaderDropzone"] > div > div::after {
     content: "첨부할 파일을 여기에 끌어다 놓거나, 파일 선택 버튼을 직접 선택해주세요." !important;
     color: #495057 !important;
@@ -114,7 +116,7 @@ div[data-testid="stVerticalBlock"] > div:has(div.stHeader) {
     word-break: keep-all !important;
 }
 
-/* 5. 파일 선택 버튼 튕겨나감 완벽 방어 (Absolute Position) */
+/* 파일 선택 버튼 튕겨나감 완벽 방어 (Absolute Position) */
 [data-testid="stFileUploaderDropzone"] button {
     color: transparent !important; 
     background-color: #2b70f9 !important; 
@@ -132,7 +134,7 @@ div[data-testid="stVerticalBlock"] > div:has(div.stHeader) {
     display: block !important;
 }
 
-/* 6. 버튼 안쪽 한글 텍스트 */
+/* 버튼 안쪽 한글 텍스트 */
 [data-testid="stFileUploaderDropzone"] button::after {
     content: "📥 파일선택" !important; 
     color: white !important; 
