@@ -11,6 +11,8 @@ from pathlib import Path
 from ultralytics import YOLO
 from detect_tests.config import TRAIN, DATASET_YAML, MODELS_DIR, RESULTS_DIR, ROOT
 
+UNKNOWN_CLASS_ID = 999  # 기존 약물 ID(0~73)와 겹치지 않는 탐지 불가 약 고유 번호 지정
+UNKNOWN_CLASS_NAME = ""
 
 def build_model(nc: int = 74) -> YOLO:
     """
@@ -139,7 +141,9 @@ def train_all_folds(n_folds: int = 5):
         print(f"  {f.name}")
 
 
-def predict(source: str, weights: str = None, conf: float = 0.25, iou: float = 0.45,
+# def predict(source: str, weights: str = None, conf: float = 0.25, iou: float = 0.45,
+#             use_ocr: bool = True, use_stage2: bool = True):
+def predict(source: str, weights: str = None, conf: float = 0.01, iou: float = 0.45,
             use_ocr: bool = True, use_stage2: bool = True):
     """학습된 모델로 예측합니다."""
     w     = weights or str(MODELS_DIR / "best_model.pt")
@@ -198,7 +202,7 @@ def predict(source: str, weights: str = None, conf: float = 0.25, iou: float = 0
     all_detections   = []
     category_mapping = build_category_mapping()
     save_path = None  # 예측 시각화 이미지 파일 저장 위치 초기화
-
+    
     for r in results:
         img_path = Path(r.path)
         img = cv2.imread(str(img_path))
@@ -229,6 +233,14 @@ def predict(source: str, weights: str = None, conf: float = 0.25, iou: float = 0
         if use_ocr and print_mapping:
             result = correct_predictions(img, result, class_names, print_mapping, conf_thr=conf, img_name=img_path.name)
 
+        # ==========================================
+        # 신뢰도 점수가 0.6 이하라면 강제로 '탐지 불가' 교체
+        # ==========================================
+        class_names[UNKNOWN_CLASS_ID] = UNKNOWN_CLASS_NAME
+        for i in range(len(result["scores"])):
+            if result["scores"][i] <= 0.6:
+                result["labels"][i] = UNKNOWN_CLASS_ID
+
         for label in result["labels"]:
             class_counts[label] += 1
             
@@ -255,8 +267,9 @@ def predict(source: str, weights: str = None, conf: float = 0.25, iou: float = 0
 
     save_submission_csv(all_detections, save_dir, category_mapping=category_mapping)
 
-    # return (results, save_path)  # results 리턴 대상 제외(2026.05.08 minjae)
+    # return (results, save_path)
     return (all_detections, save_path)
+
 
 if __name__ == "__main__":
     build_model(nc=74)
