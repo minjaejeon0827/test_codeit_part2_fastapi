@@ -30,6 +30,8 @@ from ensemble_boxes import weighted_boxes_fusion
 
 from detect_tests.config import MODELS_DIR, RESULTS_DIR, TRAIN, ROOT
 
+UNKNOWN_CLASS_ID = 999
+UNKNOWN_CLASS_NAME = ""
 
 def build_category_mapping(csv_path=None) -> dict:
     """code_mapping.csv에서 {class_idx: category_id} 매핑 반환. K-001900 → 1900."""
@@ -469,6 +471,14 @@ def wbf_predict(source: str, conf: float = 0.25, iou: float = 0.45,
         # OCR 각인 보정
         if use_ocr and print_mapping:
             result = ocr_correct(img, result, class_names, print_mapping, conf_thr=conf, img_name=img_path.name)
+
+        # ==========================================
+        # 신뢰도 점수 0.6 이하라면 객체 탐지 불가 처리
+        # ==========================================
+        class_names[UNKNOWN_CLASS_ID] = UNKNOWN_CLASS_NAME
+        for i in range(len(result["scores"])):
+            if result["scores"][i] <= 0.6:
+                result["labels"][i] = UNKNOWN_CLASS_ID
 
         for label in result["labels"]:
             class_counts[label] += 1
