@@ -45,7 +45,7 @@ CONFUSING_CLASSES = {
 }
 
 UNKNOWN_CLASS_ID = 999  # 기존 약물 ID(0~73)와 겹치지 않는 탐지 불가 약 고유 번호 지정
-UNKNOWN_CLASS_NAME = "⚠️ 알약 탐지 불가: 다시 촬영 부탁드립니다."
+UNKNOWN_CLASS_NAME = ""
 
 _ocr_reader = None  # 전역 싱글턴 — 최초 1회만 로드
 
@@ -295,8 +295,6 @@ def correct_predictions(
             continue
 
         if not ocr_results:  # 알약 각인(글씨)을 아예 찾지 못한 경우 (어둡거나 흐림)
-            if score < 0.6:  # 모델의 기존 확신도(score)도 낮고 글씨도 없으면 '인식 불가' 처리
-                labels[i] = UNKNOWN_CLASS_ID
             continue
 
         # 개별 토큰 탐색 — OCR 인식 신뢰도 함께 추적
@@ -313,8 +311,6 @@ def correct_predictions(
                 break
 
         if matched_class is None:  # 글씨는 읽었으나, 정규화된 OCR 문자열로 등록된 알약 매핑 탐색 실패한 경우
-            if score < 0.6:  # 확신도가 낮은데 이상한 글씨가 읽혔다면 '인식 불가' 처리
-                labels[i] = UNKNOWN_CLASS_ID
             continue
 
         # OCR 신뢰도가 현재 신뢰도보다 0.6 이상 낮으면 보정 생략
