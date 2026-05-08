@@ -44,8 +44,10 @@ CONFUSING_CLASSES = {
     53,  # 로수젯정10/5밀리그램
 }
 
-_ocr_reader = None  # 전역 싱글턴 — 최초 1회만 로드
+UNKNOWN_CLASS_ID = 999  # 기존 약물 ID(0~73)와 겹치지 않는 인식 불가 약 고유 번호 지정
+UNKNOWN_CLASS_NAME = "⚠️ 알약 인식 불가: 밝기가 낮아 다시 촬영 부탁드립니다."
 
+_ocr_reader = None  # 전역 싱글턴 — 최초 1회만 로드
 
 def _get_reader():
     global _ocr_reader
@@ -265,7 +267,9 @@ def correct_predictions(
     boxes  = list(result["boxes"])
     scores = list(result["scores"])
     labels = list(result["labels"])
-
+    
+    class_names[UNKNOWN_CLASS_ID] = UNKNOWN_CLASS_NAME  # 모델 전체 클래스 이름 목록 임시 오류 멘트 등록.
+    
     for i, (box, score, label) in enumerate(zip(boxes, scores, labels)):
         if score >= OCR_TRIGGER_CONF and label not in CONFUSING_CLASSES:
             continue  # 신뢰도 충분 & 헷갈리는 클래스 아님 → OCR 생략
@@ -290,7 +294,9 @@ def correct_predictions(
             print(f"  [OCR 오류] {e}")
             continue
 
-        if not ocr_results:
+        if not ocr_results:  # 알약 각인(글씨)을 아예 찾지 못한 경우 (어둡거나 흐림)
+            if score < 0.6:  # 모델의 기존 확신도(score)도 낮고 글씨도 없으면 '인식 불가' 처리
+                labels[i] = UNKNOWN_CLASS_ID
             continue
 
         # 개별 토큰 탐색 — OCR 인식 신뢰도 함께 추적
@@ -306,7 +312,9 @@ def correct_predictions(
                 matched_text     = str(text)
                 break
 
-        if matched_class is None:
+        if matched_class is None:  # 글씨는 읽었으나, 정규화된 OCR 문자열로 등록된 알약 매핑 탐색 실패한 경우
+            if score < 0.6:  # 확신도가 낮은데 이상한 글씨가 읽혔다면 '인식 불가' 처리
+                labels[i] = UNKNOWN_CLASS_ID
             continue
 
         # OCR 신뢰도가 현재 신뢰도보다 0.6 이상 낮으면 보정 생략
