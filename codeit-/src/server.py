@@ -21,8 +21,7 @@ from detect_tests.model import predict
 
 app = FastAPI(title="Health-Eat API Server")
 
-# 허용할 안전한 이미지 포맷 (Pillow가 인식하는 포맷 이름)
-ALLOWED_IMAGE_FORMATS = ["JPEG", "PNG", "WEBP"]
+NOT_EXIST_MSG = "⚠️ 알약 탐지 불가: 다시 촬영 부탁드립니다."
 
 @app.get("/")
 async def root():
@@ -66,36 +65,35 @@ async def detect_pill(file: UploadFile = File(...)):
                 tmp_file.write(clean_image_bytes)
 
             # results = predict(tmp_path, conf=0.25, use_ocr=True, use_stage2=True)
-            (all_detections, predicted_image_path) = predict(tmp_path, conf=0.25, use_ocr=True, use_stage2=True)
+            # (all_detections, predicted_image_path) = predict(tmp_path, conf=0.25, use_ocr=True, use_stage2=True)
+            (all_detections, predicted_image_path) = predict(tmp_path, use_ocr=True, use_stage2=True)
         finally:
             if os.path.exists(tmp_path):
                 os.unlink(tmp_path)
                 
         # 예측 결과 파싱(all_detection 리스트 객체 사용)
         detected_pills = []
+        print(f"all_detections: {all_detections}")
         if all_detections:
             for image_id, w, h, result_dict in all_detections:
                 # zip을 사용해 라벨 번호와 저장해둔 이름을 1:1로 쏙쏙 뽑아냅니다.
                 for label, class_name in zip(result_dict["labels"], result_dict["names"]):
-                    print(f"label: {label}")
-                    print(f"name: {class_name}")
+                    # print(f"label: {label}")
+                    # print(f"name: {class_name}")
+
                     detected_pills.append({
                         "label": label,
                         "name": class_name,
                     })
-                    
-        if not detected_pills:
-            # 1. 알약을 못 찾았을 때
-            response_msg = "⚠️ 알약 탐지 불가: 다시 촬영 부탁드립니다."
-        else:
-            # 2. 알약을 찾았을 때
+
+        if not detected_pills:  # 알약 못 찾았을 때
+            response_msg = NOT_EXIST_MSG
+        else:  # 알약 찾았을 때
             response_msg = "🎉 알약 탐지 성공!"
             
-            # 알약이 존재할 때만 label 값 기준 오름차순 정렬 (제안해주신 논리 적용!)
-            detected_pills.sort(key=lambda x: x["label"])
+            detected_pills.sort(key=lambda x: x["label"])  # 알약이 존재할 때만 label 값 기준 오름차순 정렬
             
-        # 정렬된(또는 비어있는) 최종 결과 출력
-        print(f"detected_pills: {detected_pills}")
+        print(f"detected_pills: {detected_pills}")  # 정렬된(또는 비어있는) 최종 결과 출력
         
         return {
             "status": "success",
