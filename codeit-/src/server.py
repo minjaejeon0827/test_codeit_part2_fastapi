@@ -66,43 +66,80 @@ async def detect_pill(file: UploadFile = File(...)):
                 tmp_file.write(clean_image_bytes)
 
             # results = predict(tmp_path, conf=0.25, use_ocr=True, use_stage2=True)
-            (results, predicted_image_path) = predict(tmp_path, conf=0.25, use_ocr=True, use_stage2=True)
+            (all_detections, predicted_image_path) = predict(tmp_path, conf=0.25, use_ocr=True, use_stage2=True)
         finally:
             if os.path.exists(tmp_path):
                 os.unlink(tmp_path)
-
-        # TODO: 예측 결과 파싱 안 하고 예측 시각화한 이미지 파일 리턴하도록 구현 예정(2026.05.05 minjae) 
-        # 예측 결과 파싱
+                
+        # 예측 결과 파싱(all_detection 리스트 객체 사용)
         detected_pills = []
-        if results:
-            for r in results:
-                for box in r.boxes:
-                    print(f"box: {box}")
-                    # 필요시 아래 주석친 코드 사용 예정(2026.05.06 minjae)
-                    # score    = float(box.conf[0])
-                    label = int(box.cls[0])
-                    class_name = r.names[label]
+        if all_detections:
+            for image_id, w, h, result_dict in all_detections:
+                # zip을 사용해 라벨 번호와 저장해둔 이름을 1:1로 쏙쏙 뽑아냅니다.
+                for label, class_name in zip(result_dict["labels"], result_dict["names"]):
+                    print(f"label: {label}")
+                    print(f"name: {class_name}")
                     detected_pills.append({
                         "label": label,
                         "name": class_name,
-                        # 필요시 아래 주석친 코드 사용 예정(2026.05.06 minjae)
-                        # "confidence": round(score, 4),
-                        # "bbox":       [round(v, 2) for v in box.xyxy[0].tolist()],
                     })
+                    
+        if not detected_pills:
+            # 1. 알약을 못 찾았을 때
+            response_msg = "⚠️ 알약 탐지 불가: 다시 촬영 부탁드립니다."
+        else:
+            # 2. 알약을 찾았을 때
+            response_msg = "🎉 알약 탐지 성공!"
+            
+            # 알약이 존재할 때만 label 값 기준 오름차순 정렬 (제안해주신 논리 적용!)
+            detected_pills.sort(key=lambda x: x["label"])
+            
+        # 정렬된(또는 비어있는) 최종 결과 출력
+        print(f"detected_pills: {detected_pills}")
+        
+        return {
+            "status": "success",
+            "message": response_msg,
+            "detected_pills": detected_pills,
+            "predicted_image_path": predicted_image_path
+        }
+                
+        # 아래 주석친 코드 필요시 참고(2026.05.08 minjae)
+        # print(f"results: {results}")
+        # print(f"all_detections: {all_detections}")
+
+        # TODO: 예측 결과 파싱 안 하고 예측 시각화한 이미지 파일 리턴하도록 구현 예정(2026.05.05 minjae) 
+        # 예측 결과 파싱
+        # detected_pills = []
+        # if results:
+        #     for r in results:
+        #         for box in r.boxes:
+        #             print(f"box: {box}")
+        #             # 필요시 아래 주석친 코드 사용 예정(2026.05.06 minjae)
+        #             # score    = float(box.conf[0])
+        #             label = int(box.cls[0])
+        #             class_name = r.names[label]
+        #             detected_pills.append({
+        #                 "label": label,
+        #                 "name": class_name,
+        #                 # 필요시 아래 주석친 코드 사용 예정(2026.05.06 minjae)
+        #                 # "confidence": round(score, 4),
+        #                 # "bbox":       [round(v, 2) for v in box.xyxy[0].tolist()],
+        #             })
         
         # ==========================================
         # label 값 기준 오름차순 정렬 - .sort() 메서드 활용 (리스트 객체 원본 자체 정렬)
         # ==========================================
-        detected_pills.sort(key=lambda x: x["label"])
-        print(f"detected_pills: {detected_pills}")
-        # print(f"results: {results}")
+        # detected_pills.sort(key=lambda x: x["label"])
+        # print(f"detected_pills: {detected_pills}")
+        # print(f"results: {results}")        
 
-        return {
-            "status": "success",
-            "message": f"🎉 알약 탐지 성공!",
-            "detected_pills": detected_pills,
-            "predicted_image_path": predicted_image_path
-        }
+        # return {
+        #     "status": "success",
+        #     "message": f"🎉 알약 탐지 성공!",
+        #     "detected_pills": detected_pills,
+        #     "predicted_image_path": predicted_image_path
+        # }
         
     except HTTPException as http_e:
         raise http_e  # 위에서 발생시킨 400 에러 streamlit 메인 웹페이지(main_page.py) 전달
