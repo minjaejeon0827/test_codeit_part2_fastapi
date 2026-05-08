@@ -322,13 +322,13 @@ def main_page():
 
         with col2:
             with st.container(border=True):
-                st.markdown("### 📋 주의사항")
+                st.markdown("### 📋 복약 정보")
                 st.caption("Medication Info")
                 
                 pill_safety_info_data = load_pill_safety_info(str(JSON_FILE_NAME))
                 
                 if st.session_state['detect_result'] == 'success' and st.session_state['detected_pills']:
-                    st.write("알약 복용 시 주의사항 안내.")
+                    st.write("알약 복약 정보 안내.")
                     
                     for pill in st.session_state['detected_pills']:
                         pill_name = pill['name']
@@ -343,9 +343,9 @@ def main_page():
                                 st.markdown(f"**🔹 보관:** {info.get('보관', '정보 없음')}")
                                 st.markdown(f"**🔹 상호작용:** {info.get('상호작용', '정보 없음')}")
                             else:
-                                st.write("해당 약에 대한 주의사항 정보 존재 안 함!")
+                                st.write("해당 약에 대한 복약 정보 존재 안 함!")
                 else:
-                    st.write("탐지한 알약 주의사항 설명.")
+                    st.write("탐지한 알약 복약 정보 설명.")
                     # st.write("복용 중인 약의 정보 및 스케줄 관리.")
                     # st.info("알약 사진을 업로드하고 '탐지' 버튼을 눌러주세요.")
 
