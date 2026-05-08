@@ -231,6 +231,9 @@ def predict(source: str, weights: str = None, conf: float = 0.25, iou: float = 0
 
         for label in result["labels"]:
             class_counts[label] += 1
+            
+        # server.py 소스파일에서 꺼내 쓰기 쉽도록 최종 확정된 한글 이름 리스트 추가
+        result["names"] = [class_names.get(label, "알 수 없는 약") for label in result["labels"]]
 
         try:
             image_id = int(img_path.stem)
@@ -252,8 +255,8 @@ def predict(source: str, weights: str = None, conf: float = 0.25, iou: float = 0
 
     save_submission_csv(all_detections, save_dir, category_mapping=category_mapping)
 
-    return (results, save_path)
-
+    # return (results, save_path)  # results 리턴 대상 제외(2026.05.08 minjae)
+    return (all_detections, save_path)
 
 if __name__ == "__main__":
     build_model(nc=74)
