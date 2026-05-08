@@ -44,8 +44,8 @@ CONFUSING_CLASSES = {
     53,  # 로수젯정10/5밀리그램
 }
 
-UNKNOWN_CLASS_ID = 999  # 기존 약물 ID(0~73)와 겹치지 않는 인식 불가 약 고유 번호 지정
-UNKNOWN_CLASS_NAME = "⚠️ 알약 인식 불가: 밝기가 낮아 다시 촬영 부탁드립니다."
+UNKNOWN_CLASS_ID = 999  # 기존 약물 ID(0~73)와 겹치지 않는 탐지 불가 약 고유 번호 지정
+UNKNOWN_CLASS_NAME = "⚠️ 알약 탐지 불가: 다시 촬영 부탁드립니다."
 
 _ocr_reader = None  # 전역 싱글턴 — 최초 1회만 로드
 
