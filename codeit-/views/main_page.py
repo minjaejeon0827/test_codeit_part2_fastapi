@@ -25,6 +25,9 @@ RIGHT_BANNER_FILE_NAME = PROJECT_ROOT / "public" / "images" / "right_banner.png"
 JSON_FILE_NAME = PROJECT_ROOT / "detect_tests" / "pill_safety_info.json"  # 약 정보 JSON 파일 경로
 LOCALHOST = "http://127.0.0.1:8000/"
 DETECT_URL = f"{LOCALHOST}detect"
+UNKNOWN_CLASS_ID = 999
+UNKNOWN_CLASS_NAME = ""
+NOT_EXIST_MSG = "⚠️ 알약 탐지 불가: 다시 촬영 부탁드립니다. (사유: 신뢰도 0.6 이하)"
 
 @st.cache_data
 def load_pill_safety_info(file_path: str) -> dict:
@@ -83,11 +86,15 @@ def post_detect(uploaded_file: UploadFile, msg_container) -> None:
             msg_container.success(f"{result['message']}")
 
             if len(result['detected_pills']) > 0:
-                # 파이썬 리스트 내포(List Comprehension) 문법을 사용해 이름만 추출
-                pill_names = [pill['name'] for pill in result['detected_pills']]
+                # 파이썬 리스트 내포(List Comprehension) 문법을 사용해 UNKNOWN_CLASS_NAME 제외 이름만 추출
+                pill_names = [pill['name'] for pill in result['detected_pills'] if pill['name'] != UNKNOWN_CLASS_NAME]
                 # 마크다운 글머리 기호('- ')를 붙여서 깔끔한 리스트 형태로 출력.
                 formatted_names = '\n- '.join(pill_names)
                 msg_container.info(f"💊 탐지한 알약 목록\n- {formatted_names}")
+                
+                pill_unknown_labels = [pill['label'] for pill in result['detected_pills'] if pill['label'] == UNKNOWN_CLASS_ID]
+                if len(pill_unknown_labels) > 0:
+                    msg_container.info(f"💢 주의사항\n- {NOT_EXIST_MSG}")
             else:
                 msg_container.info("💊 탐지한 알약 없음.")
                 
@@ -334,16 +341,18 @@ def main_page():
                         pill_name = pill['name']
                         info = pill_safety_info_data.get(pill_name)
                         
-                        with st.expander(f"💊 {pill_name}", expanded=True):
-                            if info:
-                                st.markdown(f"**🔹 복용방법:** {info.get('복용방법', '정보 없음')}")
-                                st.markdown(f"**🔹 주의사항:** {info.get('주의사항', '정보 없음')}")
-                                st.markdown(f"**🔹 주요부작용:** {info.get('주요부작용', '정보 없음')}")
-                                st.markdown(f"**🔹 금기:** {info.get('금기', '정보 없음')}")
-                                st.markdown(f"**🔹 보관:** {info.get('보관', '정보 없음')}")
-                                st.markdown(f"**🔹 상호작용:** {info.get('상호작용', '정보 없음')}")
-                            else:
-                                st.write("해당 약에 대한 복약 정보 존재 안 함!")
+                        # print(f"pill_name: {pill_name}")
+                        if UNKNOWN_CLASS_NAME != pill_name:
+                            with st.expander(f"💊 {pill_name}", expanded=True):
+                                if info:
+                                    st.markdown(f"**🔹 복용방법:** {info.get('복용방법', '정보 없음')}")
+                                    st.markdown(f"**🔹 주의사항:** {info.get('주의사항', '정보 없음')}")
+                                    st.markdown(f"**🔹 주요부작용:** {info.get('주요부작용', '정보 없음')}")
+                                    st.markdown(f"**🔹 금기:** {info.get('금기', '정보 없음')}")
+                                    st.markdown(f"**🔹 보관:** {info.get('보관', '정보 없음')}")
+                                    st.markdown(f"**🔹 상호작용:** {info.get('상호작용', '정보 없음')}")
+                                else:
+                                    st.write("해당 약에 대한 복약 정보 존재 안 함!")
                 else:
                     st.write("탐지한 알약 복약 정보 설명.")
                     # st.write("복용 중인 약의 정보 및 스케줄 관리.")
