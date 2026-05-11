@@ -48,7 +48,7 @@ def load_css(file_name: str) -> None:
     except FileNotFoundError:
         st.error(f"[오류] main.css 파일 존재 안 함!: {file_name}")
     
-def display_server_connection():
+def display_server_connection() -> None:
     """FastAPI 서버 연결 상태 확인 및 사이드바 표시."""
     st.sidebar.caption("서버 상태")
     
