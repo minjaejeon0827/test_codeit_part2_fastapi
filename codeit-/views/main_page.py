@@ -22,12 +22,12 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CSS_FILE_NAME = PROJECT_ROOT / "public" / "css" / "main.css"
 FOOTER_BANNER_FILE_NAME = PROJECT_ROOT / "public" / "images" / "footer_banner.png"
 RIGHT_BANNER_FILE_NAME = PROJECT_ROOT / "public" / "images" / "right_banner.png"
-JSON_FILE_NAME = PROJECT_ROOT / "detect_tests" / "pill_safety_info.json"  # 약 정보 JSON 파일 경로
+JSON_FILE_NAME = PROJECT_ROOT / "pill_safety_info.json"  # 약 정보 JSON 파일 경로
 LOCALHOST = "http://127.0.0.1:8000/"
 DETECT_URL = f"{LOCALHOST}detect"
 UNKNOWN_CLASS_ID = 999
 UNKNOWN_CLASS_NAME = ""
-NOT_EXIST_MSG = "⚠️ 알약 탐지 불가: 다시 촬영 부탁드립니다. (사유: 신뢰도 0.6 이하)"
+UNKNOWN_PILL_MSG = "⚠️ 알약 탐지 불가: 다시 촬영 부탁드립니다. (사유: 신뢰도 0.6 이하)"
 
 @st.cache_data
 def load_pill_safety_info(file_path: str) -> dict:
@@ -74,7 +74,7 @@ def post_detect(uploaded_file: UploadFile, msg_container) -> None:
         # timeout=10 은 서버가 10초 안에 답이 없으면 포기.
         response = requests.post(DETECT_URL, files=files, timeout=10)
       
-        # 아래 주석친 코드 필요시 참고 (2026.05.06 minjae)
+        # 아래 주석친 코드 필요시 참고(2026.05.06 minjae)
         # raise Exception("[테스트] 서버 통신 오류")  # 예외 발생시킴
         # raise requests.exceptions.RequestException("[테스트] 서버 통신 오류")  # 예외 발생시킴
 
@@ -94,10 +94,10 @@ def post_detect(uploaded_file: UploadFile, msg_container) -> None:
                 
                 pill_unknown_labels = [pill['label'] for pill in result['detected_pills'] if pill['label'] == UNKNOWN_CLASS_ID]
                 if len(pill_unknown_labels) > 0:
-                    msg_container.info(f"💢 주의사항\n- {NOT_EXIST_MSG}")
+                    msg_container.info(f"💢 주의사항\n- {UNKNOWN_PILL_MSG}")
             else:
-                msg_container.info("💊 탐지한 알약 없음.")
-                
+                msg_container.info(f"💊 탐지한 알약 없음.")
+
             # ==========================================
             # 탐지 성공: Session State 업데이트
             # ==========================================
@@ -203,11 +203,7 @@ def main_page():
                 st.markdown("### 💊 알약 탐지")
                 st.caption("AI Detection")
                 st.write("사진 업로드 시 AI 모델이 알약을 탐지합니다.")
-                
-                # 버튼 클릭 시 액션 (나중에 FastAPI의 /detect API를 호출하게 됨)
-                # if st.button("📷 사진 업로드"):
-                #     st.info("알약 탐지 기능을 실행합니다... (API 연동 필요)")
-                
+                                
                 # 버튼 대신 파일 업로더 위젯 사용 (탐색기 열림, 파일 제한)
                 uploaded_file = st.file_uploader(
                     "📷 사진 업로드", 
@@ -249,27 +245,7 @@ def main_page():
                     # ==========================================
                     
                     msg_container = st.container()  # "탐지", "닫기" 버튼 위에 메시지만을 위한 별도 공간 생성
-                    
-                    # 아래 주석친 코드 필요 시 참고(2026.05.06 minjae)
-                    # btn_col1, btn_col2 = st.columns(2)  # 이미지 있을 때만 "탐지", "닫기" 버튼 활성화
-                    
-                    # with btn_col1:
-                    #     if st.button("탐지", width="stretch"):
-                    #         # st.session_state['show_detect_msg'] = True
-                    #         with st.spinner("AI가 알약을 꼼꼼히 분석하고 있어요... 🔍"):
-                    #             post_detect(uploaded_file, msg_container)
-                    
-                    # with btn_col2:
-                    #     if st.button("닫기", width="stretch"):
-                    #         # 닫기 버튼 클릭 시 상태 완벽 초기화(이미지 포함)
-                    #         # uploader_key 숫자를 1 올리면, Streamlit은 파일 업로더가 완전히 새로 생긴 줄 알고 안의 파일을 비워버립니다.
-                    #         st.session_state['uploader_key'] += 1
-                    #         st.session_state['detect_result'] = None
-                    #         st.session_state['predicted_image_path'] = None
-                    #         st.session_state['last_uploaded_file'] = None
-                    #         # st.session_state['show_detect_msg'] = False # 탐지 메시지도 함께 지움
-                    #         st.rerun() # 즉시 화면 새로고침
-                            
+   
                     # ==========================================
                     # 닫기 동작 깔끔하게 처리할 콜백 함수 정의
                     # ==========================================
@@ -323,10 +299,6 @@ def main_page():
                         # 조건 1: 사진 업로드 성공 (탐지 버튼 누르기 전) -> 원본 이미지 출력
                         st.image(uploaded_file, width="stretch")
 
-                    # 탐지 버튼 클릭 시 메시지 출력
-                    # if st.session_state['show_detect_msg']:
-                    #     st.info("[안내] 알약 탐지 기능 추후 구현 예정!")
-
         with col2:
             with st.container(border=True):
                 st.markdown("### 📋 복약 정보")
@@ -355,9 +327,8 @@ def main_page():
                                     st.write("해당 약에 대한 복약 정보 존재 안 함!")
                 else:
                     st.write("탐지한 알약 복약 정보 설명.")
-                    # st.write("복용 중인 약의 정보 및 스케줄 관리.")
-                    # st.info("알약 사진을 업로드하고 '탐지' 버튼을 눌러주세요.")
 
+        # 아래 주석친 코드 필요 시 참고(2026.05.11 minjae)
         # with col3:  # (오른쪽 배너 공간)
         #     # 오른쪽 배너 이미지를 넣습니다.
         #     # width="stretch" 옵션을 넣으면 상단 레이아웃 너비에 맞춰 100% 꽉 차게 확장됩니다.

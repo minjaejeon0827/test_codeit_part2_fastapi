@@ -28,7 +28,7 @@ import torch
 from ultralytics import YOLO
 from ensemble_boxes import weighted_boxes_fusion
 
-from detect_tests.config import MODELS_DIR, RESULTS_DIR, TRAIN, ROOT
+from config import MODELS_DIR, RESULTS_DIR, TRAIN, ROOT
 
 UNKNOWN_CLASS_ID = 999
 UNKNOWN_CLASS_NAME = ""

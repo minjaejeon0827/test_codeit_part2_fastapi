@@ -15,7 +15,7 @@ import numpy as np
 from pathlib import Path
 from typing import Tuple
 
-from detect_tests.config import MODELS_DIR, RESULTS_DIR, CROPS_DIR, STAGE2, STAGE1_BYPASS_THR, STAGE2_SKIP_CLASSES
+from config import MODELS_DIR, RESULTS_DIR, CROPS_DIR, STAGE2, STAGE1_BYPASS_THR, STAGE2_SKIP_CLASSES
 
 STAGE2_WEIGHTS = MODELS_DIR / "stage2_best.pt"
 

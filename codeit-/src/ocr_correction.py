@@ -21,7 +21,7 @@ import cv2
 import numpy as np
 import torch
 
-from detect_tests.config import ROOT
+from config import ROOT
 
 OCR_TRIGGER_CONF = 0.85  # 이 미만 박스만 OCR 적용 (Stage 2 bypass 임계값과 동일)
 CROP_PAD         = 0.15  # bbox 크롭 시 가로·세로 패딩 비율

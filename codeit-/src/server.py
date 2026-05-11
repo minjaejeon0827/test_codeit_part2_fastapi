@@ -16,12 +16,13 @@ import os
 import tempfile
 from pathlib import Path
 from fastapi import FastAPI, UploadFile, File, HTTPException
-from detect_tests.security import sanitize_image_bytes
-from detect_tests.model import predict
+from security import sanitize_image_bytes
+from model import predict
 
 app = FastAPI(title="Health-Eat API Server")
 
-NOT_EXIST_MSG = "⚠️ 알약 탐지 불가: 다시 촬영 부탁드립니다."
+UNKNOWN_PILL_MSG = "⚠️ 알약 탐지 불가: 다시 촬영 부탁드립니다."
+PILL_MSG = "🎉 알약 탐지 성공!"
 
 @app.get("/")
 async def root():
@@ -87,9 +88,9 @@ async def detect_pill(file: UploadFile = File(...)):
                     })
 
         if not detected_pills:  # 알약 못 찾았을 때
-            response_msg = NOT_EXIST_MSG
+            response_msg = UNKNOWN_PILL_MSG
         else:  # 알약 찾았을 때
-            response_msg = "🎉 알약 탐지 성공!"
+            response_msg = PILL_MSG
             
             detected_pills.sort(key=lambda x: x["label"])  # 알약이 존재할 때만 label 값 기준 오름차순 정렬
             
@@ -101,44 +102,6 @@ async def detect_pill(file: UploadFile = File(...)):
             "detected_pills": detected_pills,
             "predicted_image_path": predicted_image_path
         }
-                
-        # 아래 주석친 코드 필요시 참고(2026.05.08 minjae)
-        # print(f"results: {results}")
-        # print(f"all_detections: {all_detections}")
-
-        # TODO: 예측 결과 파싱 안 하고 예측 시각화한 이미지 파일 리턴하도록 구현 예정(2026.05.05 minjae) 
-        # 예측 결과 파싱
-        # detected_pills = []
-        # if results:
-        #     for r in results:
-        #         for box in r.boxes:
-        #             print(f"box: {box}")
-        #             # 필요시 아래 주석친 코드 사용 예정(2026.05.06 minjae)
-        #             # score    = float(box.conf[0])
-        #             label = int(box.cls[0])
-        #             class_name = r.names[label]
-        #             detected_pills.append({
-        #                 "label": label,
-        #                 "name": class_name,
-        #                 # 필요시 아래 주석친 코드 사용 예정(2026.05.06 minjae)
-        #                 # "confidence": round(score, 4),
-        #                 # "bbox":       [round(v, 2) for v in box.xyxy[0].tolist()],
-        #             })
-        
-        # ==========================================
-        # label 값 기준 오름차순 정렬 - .sort() 메서드 활용 (리스트 객체 원본 자체 정렬)
-        # ==========================================
-        # detected_pills.sort(key=lambda x: x["label"])
-        # print(f"detected_pills: {detected_pills}")
-        # print(f"results: {results}")        
-
-        # return {
-        #     "status": "success",
-        #     "message": f"🎉 알약 탐지 성공!",
-        #     "detected_pills": detected_pills,
-        #     "predicted_image_path": predicted_image_path
-        # }
-        
     except HTTPException as http_e:
         raise http_e  # 위에서 발생시킨 400 에러 streamlit 메인 웹페이지(main_page.py) 전달
     except Exception as e:

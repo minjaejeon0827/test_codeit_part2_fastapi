@@ -9,7 +9,7 @@ import torch
 import cv2
 from pathlib import Path
 from ultralytics import YOLO
-from detect_tests.config import TRAIN, DATASET_YAML, MODELS_DIR, RESULTS_DIR, ROOT
+from config import TRAIN, DATASET_YAML, MODELS_DIR, RESULTS_DIR, ROOT
 
 UNKNOWN_CLASS_ID = 999  # 기존 약물 ID(0~73)와 겹치지 않는 탐지 불가 약 고유 번호 지정
 UNKNOWN_CLASS_NAME = ""
@@ -140,7 +140,7 @@ def train_all_folds(n_folds: int = 5):
     for f in sorted(MODELS_DIR.glob("fold*_best.pt")):
         print(f"  {f.name}")
 
-
+# 아래 주석친 코드 필요 시 참고(2026.05.11 minjae)
 # def predict(source: str, weights: str = None, conf: float = 0.25, iou: float = 0.45,
 #             use_ocr: bool = True, use_stage2: bool = True):
 def predict(source: str, weights: str = None, conf: float = 0.01, iou: float = 0.45,
@@ -169,7 +169,7 @@ def predict(source: str, weights: str = None, conf: float = 0.01, iou: float = 0
     idx_to_class = None
     if use_stage2:
         try:
-            from detect_tests.crop_classifier import load_stage2_model, apply_stage2
+            from crop_classifier import load_stage2_model, apply_stage2
             stage2_model, idx_to_class = load_stage2_model()
         except FileNotFoundError as e:
             print(f"[경고] {e}")
@@ -182,7 +182,7 @@ def predict(source: str, weights: str = None, conf: float = 0.01, iou: float = 0
     print_mapping = {}
     if use_ocr:
         try:
-            from detect_tests.ocr_correction import build_print_mapping, correct_predictions
+            from ocr_correction import build_print_mapping, correct_predictions
             print_mapping = build_print_mapping()
         except ImportError:
             print("[경고] ocr_correction 모듈을 찾을 수 없습니다. OCR 보정을 건너뜁니다.")
@@ -196,7 +196,7 @@ def predict(source: str, weights: str = None, conf: float = 0.01, iou: float = 0
     save_dir.mkdir(parents=True, exist_ok=True)
 
     from collections import defaultdict
-    from detect_tests.wbf_ensemble import filter_corner_boxes, filter_overlapping_boxes, draw_result, build_category_mapping, save_submission_csv
+    from wbf_ensemble import filter_corner_boxes, filter_overlapping_boxes, draw_result, build_category_mapping, save_submission_csv
     class_counts     = defaultdict(int)
     class_names      = model.names
     all_detections   = []
@@ -234,7 +234,7 @@ def predict(source: str, weights: str = None, conf: float = 0.01, iou: float = 0
             result = correct_predictions(img, result, class_names, print_mapping, conf_thr=conf, img_name=img_path.name)
 
         # ==========================================
-        # 신뢰도 점수가 0.6 이하라면 강제로 '탐지 불가' 교체
+        # 신뢰도 점수 0.6 이하라면 강제로 '탐지 불가' 교체
         # ==========================================
         class_names[UNKNOWN_CLASS_ID] = UNKNOWN_CLASS_NAME
         for i in range(len(result["scores"])):
