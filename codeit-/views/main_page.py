@@ -47,6 +47,7 @@ def load_css(file_name: str) -> None:
             st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
     except FileNotFoundError:
         st.error(f"[오류] main.css 파일 존재 안 함!: {file_name}")
+        # st.stop()  # 아래 코드 실행 안 함
     
 def display_server_connection() -> None:
     """FastAPI 서버 연결 상태 확인 및 사이드바 표시."""
@@ -63,6 +64,7 @@ def display_server_connection() -> None:
     # except requests.exceptions.ConnectionError:
     except requests.exceptions.RequestException:
         st.sidebar.error("🔴 서버 꺼져있음")  # ConnectionError뿐만 아니라 Timeout 등 모든 요청 관련 오류 포괄하여 처리
+        # st.stop()  # 아래 코드 실행 안 함
     
 def post_detect(uploaded_file: UploadFile, msg_container) -> None:
     # 1. 서버로 보낼 '파일 상자' 만들기
@@ -125,7 +127,7 @@ def post_detect(uploaded_file: UploadFile, msg_container) -> None:
             except ValueError:
                 # 만약 서버가 치명적으로 고장나서 JSON 포장지조차 못 만들고 죽었을 때를 대비한 안전망
                 msg_container.error(f"⚠️ 서버 오류 발생! (상태 코드: {response.status_code})")                   
-    
+                # st.stop()  # 아래 코드 실행 안 함
     except requests.exceptions.RequestException as e:
         # 통신 실패: Session State 업데이트
         st.session_state['detect_result'] = "failure"
@@ -343,6 +345,7 @@ def main_page():
         st.caption("© 2026 Health-Eat. All rights reserved.")
     except Exception as e:
         st.error(f"[오류] 기능 실행 중 오류 발생: {str(e)}")
+        # st.stop()  # 아래 코드 실행 안 함
 
 if __name__ == "__main__":
     main_page()
