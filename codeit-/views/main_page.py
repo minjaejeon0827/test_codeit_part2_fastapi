@@ -137,20 +137,22 @@ def post_detect(uploaded_file: UploadFile, msg_container) -> None:
     
 def main_page():
     """Streamlit 메인 웹페이지"""
+    print(f"PROJECT_ROOT: {str(PROJECT_ROOT)}")
+
+    print("Streamlit 메인 웹페이지 함수 시작")
+
+    # 1. 페이지 설정 (제목 및 아이콘)
+    st.set_page_config(
+        page_title="Health-Eat | 알약 탐지 서비스",
+        page_icon="💊",
+        # layout="centered",
+        layout="wide"
+    )
+    
     try:
         # 아래 테스트 오류 코드 필요시 참고 (2025.10.30 minjae)
         # raise Exception('Streamlit 단위 기능 테스트')  # 예외 발생시킴
-        print(f"PROJECT_ROOT: {str(PROJECT_ROOT)}")
 
-        print("Streamlit 메인 웹페이지 함수 시작")
-
-        # 1. 페이지 설정 (제목 및 아이콘)
-        st.set_page_config(
-            page_title="Health-Eat | 알약 탐지 서비스",
-            page_icon="💊",
-            # layout="centered",
-            layout="wide"
-        )
         
         # ==========================================
         # 상태 관리 (Session State) 초기화 세팅
